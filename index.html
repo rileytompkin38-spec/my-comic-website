@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Read the latest chapters of this story and comic.">
+  <meta name="theme-color" content="#171923">
+  <title>My Comic</title>
+  <style>
+    :root{--bg:#101116;--panel:#191b24;--panel2:#222532;--text:#f4f5f8;--muted:#aeb2c2;--accent:#b8f36b;--line:#343746;--danger:#ff8a8a}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:11px 15px;font-weight:700;background:var(--accent);color:#151710}
+    button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:#572c35;color:#fff}
+    button:disabled{opacity:.5;cursor:not-allowed}a{color:var(--accent)}header{border-bottom:1px solid var(--line);background:#14151b;position:sticky;top:0;z-index:5}
+    .top{max-width:1100px;margin:auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:900;letter-spacing:.2px;font-size:1.15rem}.brand span{color:var(--accent)}.wrap{max-width:1100px;margin:auto;padding:28px 20px 70px}
+    .hero{padding:30px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,#242837,#171922);margin-bottom:24px}
+    .eyebrow{color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:.76rem}
+    h1{font-size:clamp(2rem,6vw,3.6rem);line-height:1.05;margin:8px 0 12px}h2{margin:0 0 12px}p{color:var(--muted)}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.field{display:grid;gap:6px;margin:12px 0}.field label{font-weight:700;font-size:.9rem}
+    input,textarea{width:100%;background:#101116;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;outline:none}
+    input:focus,textarea:focus{border-color:var(--accent)}textarea{min-height:100px;resize:vertical}
+    .search{flex:1;min-width:190px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px}
+    .chapter-num{font-size:.78rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em}.card h3{margin:0;font-size:1.25rem}.card p{margin:0;flex:1}
+    .small{font-size:.85rem;color:var(--muted)}.hidden{display:none!important}.status{margin:12px 0;color:var(--muted);min-height:1.5em}.status.error{color:var(--danger)}.status.good{color:var(--accent)}
+    .reader{max-width:900px;margin:auto}.reader-head{margin-bottom:22px}.pages{display:grid;gap:12px}.pages img{display:block;width:100%;height:auto;border-radius:8px;background:#08090c;border:1px solid var(--line)}
+    .page-fallback{border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--muted)}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:16px 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    footer{text-align:center;border-top:1px solid var(--line);padding:24px;color:var(--muted);font-size:.85rem}
+    .admin-list{display:grid;gap:10px}.admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel2);padding:12px;border-radius:12px}
+    .admin-actions{display:flex;gap:8px;flex-wrap:wrap}.file-hint{font-size:.85rem;color:var(--muted)}.preview{display:flex;gap:8px;overflow:auto}.preview img{height:100px;width:auto;border-radius:8px}
+    @media(max-width:600px){.top{padding:12px 14px}.wrap{padding:20px 14px 50px}.hero{padding:22px}.two{grid-template-columns:1fr}.admin-row{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<header><div class="top"><div class="brand"><span>✦</span> <span id="siteName">My Comic</span></div><div class="toolbar" style="margin:0"><button class="secondary" id="homeBtn">Chapters</button><button class="secondary" id="adminBtn">Creator login</button></div></div></header>
+<main class="wrap">
+  <section id="homeView">
+    <div class="hero"><div class="eyebrow">Original webcomic</div><h1 id="heroTitle">Your comic starts here.</h1><p id="heroDesc">A home for your comic pages and chapters. Sign in as the creator to upload pages and publish the next chapter.</p></div>
+    <div class="toolbar"><input id="searchInput" class="search" type="search" placeholder="Search chapters by title or number…" aria-label="Search chapters"><button id="refreshBtn" class="secondary">Refresh</button></div>
+    <div id="chapterGrid" class="grid"></div><div id="homeStatus" class="status" role="status">Connect your Supabase project in the setup guide to publish chapters.</div>
+  </section>
+
+  <section id="readerView" class="hidden reader">
+    <div class="toolbar"><button id="backBtn" class="secondary">← All chapters</button></div>
+    <div class="reader-head"><div id="readerNumber" class="eyebrow"></div><h1 id="readerTitle"></h1><p id="readerSummary"></p></div>
+    <div id="readerPages" class="pages"></div>
+    <div class="toolbar"><button id="prevBtn" class="secondary">← Previous</button><button id="nextBtn">Next chapter →</button></div>
+  </section>
+
+  <section id="adminView" class="hidden">
+    <div class="hero"><div class="eyebrow">Creator studio</div><h1>Manage your chapters</h1><p>Only your signed-in creator account can create, edit, or delete chapters. Readers can view published chapters without logging in.</p></div>
+    <div id="loginPanel" class="panel">
+      <h2>Creator login</h2>
+      <p>Use the email and password for the admin account you create in Supabase.</p>
+      <form id="loginForm">
+        <div class="field"><label for="email">Creator email</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+        <button type="submit">Sign in</button>
+      </form><div id="loginStatus" class="status"></div>
+    </div>
+    <div id="editorPanel" class="hidden">
+      <div class="toolbar"><button id="newChapterBtn">＋ Create chapter</button><button id="logoutBtn" class="secondary">Sign out</button></div>
+      <div id="editorFormPanel" class="panel hidden">
+        <h2 id="formHeading">Create a chapter</h2>
+        <form id="chapterForm">
+          <input type="hidden" id="chapterId">
+          <div class="two">
+            <div class="field"><label for="chapterNumber">Chapter number</label><input id="chapterNumber" type="number" min="1" step="1" required placeholder="1"></div>
+            <div class="field"><label for="chapterTitle">Chapter title</label><input id="chapterTitle" maxlength="140" required placeholder="The Beginning"></div>
+          </div>
+          <div class="field"><label for="chapterSummary">Short description (optional)</label><textarea id="chapterSummary" maxlength="700" placeholder="What happens in this chapter?"></textarea></div>
+          <div class="field"><label for="chapterImages">Comic pages / story images</label><input id="chapterImages" type="file" accept="image/*" multiple><div class="file-hint">Choose images in reading order. On edit, new images are added after existing pages. Use “Replace all pages” if you want to start over.</div></div>
+          <label style="display:flex;align-items:center;gap:8px;margin:10px 0"><input id="replaceImages" type="checkbox" style="width:auto"> Replace all existing pages with the images selected above</label>
+          <div id="imagePreview" class="preview"></div>
+          <div class="toolbar"><button id="saveChapterBtn" type="submit">Create chapter</button><button id="cancelEditBtn" type="button" class="secondary">Cancel</button></div>
+        </form><div id="editorStatus" class="status"></div>
+      </div>
+      <div class="panel"><h2>Your chapters</h2><div id="adminChapterList" class="admin-list"></div><div id="adminStatus" class="status"></div></div>
+    </div>
+  </section>
+</main>
+<footer>Made for independent comics · Replace “My Comic” with your chosen comic title when you are ready.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/*
+  SETUP: paste your Supabase Project URL and anon/publishable key below.
+  These are public client set`tings, not a service-role secret. Database RLS protects edits.
+*/
+const SUPABASE_URL = "https://eoycvwwdmxuvbdulsdgo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_S22eWxFf1Zuysd9UKFIN3A_tBgdwZ-w";
+const STORAGE_BUCKET = "comic-pages";
+const supabaseConfigured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PASTE_") && !SUPABASE_ANON_KEY.includes("PASTE_");
+const sb = supabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let chapters = [];
+let currentChapterIndex = -1;
+let currentSession = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function status(id, message, kind=""){ const el=$(id); el.textContent=message; el.className="status "+kind; }
+function configured(){ if(!sb){status("homeStatus","Setup needed: follow README.md to connect Supabase and publish your site.","error");return false;} return true; }
+function show(view){["homeView","readerView","adminView"].forEach(id=>$(id).classList.toggle("hidden",id!==view)); window.scrollTo({top:0,behavior:"smooth"});}
+function pagesOf(ch){ return Array.isArray(ch.pages) ? ch.pages : []; }
+async function loadChapters(){
+  if(!configured()){ $("chapterGrid").innerHTML=""; return; }
+  const {data,error}=await sb.from("chapters").select("*").order("chapter_number",{ascending:true});
+  if(error){status("homeStatus","Could not load chapters: "+error.message,"error");return;}
+  chapters=data||[]; renderCards(); renderAdminList();
+  status("homeStatus",chapters.length ? `${chapters.length} chapter${chapters.length===1?"":"s"} published.` : "No chapters published yet. The creator can add the first chapter after signing in.");
+}
+function renderCards(){
+  const q=$("searchInput").value.trim().toLowerCase();
+  const filtered=chapters.filter(c=>String(c.chapter_number).includes(q)||String(c.title||"").toLowerCase().includes(q)||String(c.summary||"").toLowerCase().includes(q));
+  $("chapterGrid").innerHTML=filtered.length ? filtered.map(c=>`<article class="card"><div class="chapter-num">Chapter ${esc(c.chapter_number)}</div><h3>${esc(c.title)}</h3><p>${esc(c.summary||"Open to read this chapter.")}</p><div class="small">${pagesOf(c).length} page${pagesOf(c).length===1?"":"s"}</div><button data-read="${c.id}">Read chapter</button></article>`).join("") : `<div class="page-fallback">No chapters match that search.</div>`;
+  $("chapterGrid").querySelectorAll("[data-read]").forEach(b=>b.addEventListener("click",()=>openChapter(b.dataset.read)));
+}
+function openChapter(id){
+  currentChapterIndex=chapters.findIndex(c=>c.id===id); const c=chapters[currentChapterIndex]; if(!c)return;
+  $("readerNumber").textContent="CHAPTER "+c.chapter_number;$("readerTitle").textContent=c.title;$("readerSummary").textContent=c.summary||"";
+  const pages=pagesOf(c);
+  $("readerPages").innerHTML=pages.length?pages.map((url,i)=>`<img src="${esc(url)}" alt="Chapter ${esc(c.chapter_number)}, page ${i+1}" loading="${i<2?"eager":"lazy"}">`).join(""):`<div class="page-fallback">This chapter has no images yet.</div>`;
+  $("prevBtn").disabled=currentChapterIndex<=0;$("nextBtn").disabled=currentChapterIndex>=chapters.length-1;show("readerView");
+}
+function renderAdminList(){
+  if(!currentSession)return;
+  $("adminChapterList").innerHTML=chapters.length?chapters.map(c=>`<div class="admin-row"><div><strong>Chapter ${esc(c.chapter_number)}: ${esc(c.title)}</strong><div class="small">${pagesOf(c).length} page${pagesOf(c).length===1?"":"s"}</div></div><div class="admin-actions"><button class="secondary" data-edit="${c.id}">Edit</button><button class="danger" data-delete="${c.id}">Delete</button></div></div>`).join(""):`<p>No chapters yet. Press “Create chapter” to add one.</p>`;
+  $("adminChapterList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>startEdit(b.dataset.edit)));
+  $("adminChapterList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteChapter(b.dataset.delete)));
+}
+function resetEditor(){ $("chapterForm").reset();$("chapterId").value="";$("formHeading").textContent="Create a chapter";$("saveChapterBtn").textContent="Create chapter";$("imagePreview").innerHTML="";status("editorStatus","");$("editorFormPanel").classList.add("hidden"); }
+function startNew(){resetEditor();$("formHeading").textContent="Create a chapter";$("saveChapterBtn").textContent="Create chapter";$("chapterNumber").value=chapters.length?Math.max(...chapters.map(c=>Number(c.chapter_number)||0))+1:1;$("editorFormPanel").classList.remove("hidden");$("chapterTitle").focus();}
+function startEdit(id){const c=chapters.find(x=>x.id===id);if(!c)return;resetEditor();$("chapterId").value=c.id;$("chapterNumber").value=c.chapter_number;$("chapterTitle").value=c.title;$("chapterSummary").value=c.summary||"";$("formHeading").textContent="Edit chapter";$("saveChapterBtn").textContent="Save changes";$("editorFormPanel").classList.remove("hidden");$("imagePreview").innerHTML=pagesOf(c).map(url=>`<img src="${esc(url)}" alt="Existing page preview">`).join("");}
+$("chapterImages").addEventListener("change",()=>{$("imagePreview").innerHTML=[...$("chapterImages").files].map(f=>`<span class="small">${esc(f.name)}</span>`).join("");});
+async function uploadImages(files){
+  const urls=[];
+  for(const file of files){
+    if(!file.type.startsWith("image/"))throw new Error(file.name+" is not an image.");
+    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const path=`${currentSession.user.id}/${crypto.randomUUID()}-${safe}`;
+    const {error}=await sb.storage.from(STORAGE_BUCKET).upload(path,file,{upsert:false,contentType:file.type});
+    if(error)throw error;
+    const {data}=sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);urls.push(data.publicUrl);
+  }
+  return urls;
+}
+$("chapterForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!configured()||!currentSession)return;
+  const id=$("chapterId").value;const files=[...$("chapterImages").files];const btn=$("saveChapterBtn");
+  btn.disabled=true;status("editorStatus",id?"Saving changes…":"Creating chapter…");
+  try{
+    const existing=chapters.find(c=>c.id===id);let pages=existing?pagesOf(existing).slice():[];
+    const uploaded=files.length?await uploadImages(files):[];
+    pages=$("replaceImages").checked?uploaded:pages.concat(uploaded);
+    const record={chapter_number:Number($("chapterNumber").value),title:$("chapterTitle").value.trim(),summary:$("chapterSummary").value.trim(),pages,updated_at:new Date().toISOString()};
+    let result;
+    if(id) result=await sb.from("chapters").update(record).eq("id",id).select().single();
+    else result=await sb.from("chapters").insert({...record,created_by:currentSession.user.id}).select().single();
+    if(result.error)throw result.error;
+    status("editorStatus",id?"Changes saved.":"Chapter created and saved.","good");
+    await loadChapters();resetEditor();
+  }catch(err){status("editorStatus","Could not save: "+(err.message||String(err)),"error");}
+  finally{btn.disabled=false;}
+});
+async function deleteChapter(id){
+  const c=chapters.find(x=>x.id===id);if(!c||!confirm(`Delete Chapter ${c.chapter_number}: ${c.title}? This cannot be undone.`))return;
+  const {error}=await sb.from("chapters").delete().eq("id",id);
+  if(error){status("adminStatus","Could not delete: "+error.message,"error");return;}
+  await loadChapters();status("adminStatus","Chapter deleted.","good");
+}
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!configured())return;
+  status("loginStatus","Signing in…");
+  const {data,error}=await sb.auth.signInWithPassword({email:$("email").value,password:$("password").value});
+  if(error){status("loginStatus","Sign-in failed. Check your details and Supabase setup.","error");return;}
+  currentSession=data.session;syncAdmin();await loadChapters();
+});
+async function syncAdmin(){
+  if(sb){const {data}=await sb.auth.getSession();currentSession=data.session;}
+  const logged=!!currentSession;$("loginPanel").classList.toggle("hidden",logged);$("editorPanel").classList.toggle("hidden",!logged);
+  if(logged){status("loginStatus","Signed in as creator.","good");renderAdminList();}
+}
+$("logoutBtn").addEventListener("click",async()=>{if(sb)await sb.auth.signOut();currentSession=null;syncAdmin();show("homeView");});
+$("homeBtn").addEventListener("click",()=>show("homeView"));$("adminBtn").addEventListener("click",()=>{show("adminView");syncAdmin();});
+$("backBtn").addEventListener("click",()=>show("homeView"));$("refreshBtn").addEventListener("click",loadChapters);$("searchInput").addEventListener("input",renderCards);
+$("newChapterBtn").addEventListener("click",startNew);$("cancelEditBtn").addEventListener("click",resetEditor);
+$("prevBtn").addEventListener("click",()=>{if(currentChapterIndex>0)openChapter(chapters[currentChapterIndex-1].id);});
+$("nextBtn").addEventListener("click",()=>{if(currentChapterIndex<chapters.length-1)openChapter(chapters[currentChapterIndex+1].id);});
+if(sb){sb.auth.onAuthStateChange((_event,session)=>{currentSession=session;syncAdmin();});}
+loadChapters();syncAdmin();
+</script>
+</body>
+</html>
