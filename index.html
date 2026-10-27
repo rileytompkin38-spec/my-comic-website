@@ -58,7 +58,9 @@
         <div class="field"><label for="email">Creator email</label><input id="email" type="email" autocomplete="username" required></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
         <button type="submit">Sign in</button>
-      </form><div id="loginStatus" class="status"></div>
+      </form>
+      <button type="button" id="forgotPasswordBtn" class="secondary" style="margin-top:10px">Forgot password?</button>
+      <div id="loginStatus" class="status"></div>
     </div>
     <div id="editorPanel" class="hidden">
       <div class="toolbar"><button id="newChapterBtn">＋ Create chapter</button><button id="logoutBtn" class="secondary">Sign out</button></div>
@@ -170,6 +172,32 @@ async function deleteChapter(id){
   if(error){status("adminStatus","Could not delete: "+error.message,"error");return;}
   await loadChapters();status("adminStatus","Chapter deleted.","good");
 }
+$("forgotPasswordBtn").addEventListener("click",async()=>{
+  if(!configured())return;
+  const email=$("email").value.trim();
+  if(!email){status("loginStatus","Enter your creator email above first, then click Forgot password again.","error");$("email").focus();return;}
+  const btn=$("forgotPasswordBtn");btn.disabled=true;
+  status("loginStatus","Sending password reset email…");
+  try{
+    const redirectTo=window.location.origin+window.location.pathname;
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error)throw error;
+    status("loginStatus","If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder.","good");
+  }catch(err){status("loginStatus","Could not send reset email: "+(err.message||String(err)),"error");}
+  finally{btn.disabled=false;}
+});
+sb?.auth.onAuthStateChange(async(event,session)=>{
+  currentSession=session;
+  if(event==="PASSWORD_RECOVERY"){
+    const newPassword=window.prompt("Choose a new creator password (at least 6 characters):");
+    if(newPassword&&newPassword.length>=6){
+      const {error}=await sb.auth.updateUser({password:newPassword});
+      if(error)alert("Password update failed: "+error.message);
+      else alert("Password updated. You can now sign in with your new password.");
+    }else if(newPassword!==null){alert("Password must be at least 6 characters. Request another reset link to try again.");}
+  }
+  syncAdmin();
+});
 $("loginForm").addEventListener("submit",async e=>{
   e.preventDefault();if(!configured())return;
   status("loginStatus","Signing in…");
@@ -188,7 +216,6 @@ $("backBtn").addEventListener("click",()=>show("homeView"));$("refreshBtn").addE
 $("newChapterBtn").addEventListener("click",startNew);$("cancelEditBtn").addEventListener("click",resetEditor);
 $("prevBtn").addEventListener("click",()=>{if(currentChapterIndex>0)openChapter(chapters[currentChapterIndex-1].id);});
 $("nextBtn").addEventListener("click",()=>{if(currentChapterIndex<chapters.length-1)openChapter(chapters[currentChapterIndex+1].id);});
-if(sb){sb.auth.onAuthStateChange((_event,session)=>{currentSession=session;syncAdmin();});}
 loadChapters();syncAdmin();
 </script>
 </body>
